@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from typing import Optional
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import pandas as pd
@@ -31,28 +32,52 @@ class LogEntry(BaseModel):
     carbs: int = 0
     fats: int = 0
 
-def authenticate(user: str, pin: str):
+def authenticate(user: str, pin: str, email: Optional[str] = None):
     if not os.path.exists(USERS_FILE):
         return True
     with open(USERS_FILE, 'r') as f:
         users = json.load(f)
-    # If user doesn't exist, create them with this PIN automatically
+    
+    # If user doesn't exist, we are in REGISTRATION mode. Email is strictly required.
     if user not in users:
-        users[user] = pin
+        if not email:
+            raise HTTPException(status_code=400, detail="Account not found. Please provide an email to register a new account.")
+        users[user] = {"pin": pin, "email": email}
         with open(USERS_FILE, 'w') as f:
             json.dump(users, f, indent=4)
+        
+        # Log the registration event
+        _log_user_action(user, "REGISTER")
         return True
+        
     # If user exists, check pin
-    if users[user] != pin:
+    # We gracefully handle legacy users who only stored a string PIN originally
+    stored_pin = users[user].get("pin") if isinstance(users[user], dict) else users[user]
+    if stored_pin != pin:
         raise HTTPException(status_code=401, detail="Invalid PIN")
+        
+    # Log the successful login event
+    _log_user_action(user, "LOGIN")
     return True
 
+def _log_user_action(user: str, action: str):
+    log_file = os.path.join(BASE_DIR, "login_logs.csv")
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    # Create the row data
+    log_row = pd.DataFrame([{"Timestamp": timestamp, "User": user, "Action": action}])
+    
+    if os.path.exists(log_file):
+        log_row.to_csv(log_file, mode='a', header=False, index=False)
+    else:
+        log_row.to_csv(log_file, mode='w', header=True, index=False)
+
 @app.get("/api/data")
-def get_data(user: str = "default", pin: str = "0000", goal: str = "maintain"):
+def get_data(user: str = "default", pin: str = "0000", goal: str = "maintain", email: Optional[str] = None):
     """
     Reads the CSV, applying algorithms for the specific user and returning targets.
     """
-    authenticate(user, pin)
+    authenticate(user, pin, email)
     
     if not os.path.exists(DATA_FILE):
         return {"data": []}
@@ -134,6 +159,9 @@ def add_log(entry: LogEntry):
             raise HTTPException(status_code=400, detail="Cannot log future dates.")
         if diff > 3:
             raise HTTPException(status_code=400, detail="Cannot log dates older than 3 days.")
+            
+        # Log the data entry action to the audit logs including current weight
+        _log_user_action(entry.user, f"LOG_DATA (Weight: {entry.weight}kg)")
         
         # Remove pin and goal from the saved data (we just needed it for auth/targets)
         del new_row['pin']
@@ -184,6 +212,58 @@ def reset_user(user: str, pin: str):
         return {"status": "success", "message": "Data wiped for user."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+from fastapi.responses import FileResponse, StreamingResponse
+import io
+
+@app.get("/api/export/user")
+def export_user_data(user: str, pin: str):
+    """
+    Exports only the specific user's raw data as a CSV spreadsheet.
+    """
+    authenticate(user, pin)
+    if not os.path.exists(DATA_FILE):
+        raise HTTPException(status_code=404, detail="No data found.")
+        
+    # Read, filter, and stream back memory object directly
+    df = pd.read_csv(DATA_FILE)
+    if 'user' in df.columns:
+        df = df[df['user'] == user].copy()
+    
+    # Sort for cleanliness
+    if not df.empty and 'date' in df.columns:
+        df['date'] = pd.to_datetime(df['date'])
+        df = df.sort_values(by='date')
+        df['date'] = df['date'].dt.strftime('%Y-%m-%d')
+        
+    stream = io.StringIO()
+    df.to_csv(stream, index=False)
+    response = StreamingResponse(iter([stream.getvalue()]), media_type="text/csv")
+    response.headers["Content-Disposition"] = f"attachment; filename=TDEElytics_{user}_export.csv"
+    return response
+
+@app.get("/api/export/admin")
+def export_admin_data(user: str, pin: str, file_type: str = "data"):
+    """
+    Administrative export of the master data file or the login audit logs.
+    We will hardcode an 'admin' user profile check here.
+    """
+    authenticate(user, pin)
+    
+    # We assume whichever username was created FIRST in users.json is the admin
+    with open(USERS_FILE, 'r') as f:
+        users = json.load(f)
+        admin_username = list(users.keys())[0] if users else None
+        
+    if user != admin_username:
+        raise HTTPException(status_code=403, detail="Administrator privileges required.")
+        
+    target_file = DATA_FILE if file_type == "data" else os.path.join(BASE_DIR, "login_logs.csv")
+    
+    if not os.path.exists(target_file):
+        raise HTTPException(status_code=404, detail=f"No {file_type} logs found on server.")
+        
+    return FileResponse(target_file, media_type="text/csv", filename=f"TDEElytics_AdminMaster_{file_type}.csv")
 
 # Mount the static site for the frontend.
 # It's important to mount this last so it doesn't intercept API routes.
