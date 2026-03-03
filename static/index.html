@@ -14,7 +14,7 @@
     <script
         src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <!-- CSS -->
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style_v2.css">
 </head>
 
 <body>
@@ -22,24 +22,18 @@
         <!-- Header -->
         <header class="header glass">
             <div class="header-logo">
-                <div class="logo-mark"></div>
+                <img src="logo.webp" alt="Logo" class="logo-img">
                 <h1>TDEElytics</h1>
             </div>
             <div class="header-controls">
-                <span id="welcome-msg" style="margin-right: 12px; font-weight: 500; align-self: center;"></span>
-                <select id="user-select" class="dropdown-glass">
-                    <option value="default">Default User</option>
-                    <option value="guest">Guest Profile</option>
-                    <option value="new">+ Add User</option>
-                </select>
-                <select id="goal-select" class="dropdown-glass">
-                    <option value="lose_1_0">Lose 1.0kg/w</option>
-                    <option value="lose_0_5">Lose 0.5kg/w</option>
-                    <option value="lose_0_25">Lose 0.25kg/w</option>
-                    <option value="maintain" selected>Maintain Weight</option>
-                    <option value="gain_0_25">Gain 0.25kg/w</option>
-                    <option value="gain_0_5">Gain 0.5kg/w</option>
-                </select>
+                <div class="user-profile-pill" id="btn-profile" style="cursor: pointer; transition: transform 0.2s;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <span id="active-user-display">Login to continue</span>
+                </div>
             </div>
         </header>
 
@@ -102,50 +96,109 @@
                 </form>
             </section>
 
-            <!-- Time Range Toggles -->
-            <div class="time-toggles glass">
-                <button class="toggle-btn active" data-range="14">2W</button>
-                <button class="toggle-btn" data-range="30">1M</button>
-                <button class="toggle-btn" data-range="90">3M</button>
-                <button class="toggle-btn" data-range="all">All</button>
+            <!-- Quick Action Cards (Analytics & Guide) -->
+            <div class="action-cards"
+                style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                <a href="analytics.html" class="card glass"
+                    style="text-decoration: none; text-align: center; padding: 20px; transition: transform 0.2s;">
+                    <h2 style="color: var(--accent);">View Analytics</h2>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 5px;">Charts & Trends</p>
+                </a>
+                <div id="btn-guide" class="card glass"
+                    style="cursor: pointer; text-align: center; padding: 20px; transition: transform 0.2s;">
+                    <h2 style="color: var(--primary);">What is TDEE?</h2>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 5px;">Quick Guide</p>
+                </div>
             </div>
 
-            <!-- Charts Section -->
-            <section class="charts-container">
-                <div class="card glass chart-card">
-                    <div class="card-header">
-                        <h2>Weight Trend</h2>
-                    </div>
-                    <div class="chart-wrapper">
-                        <canvas id="weightChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="card glass chart-card">
-                    <div class="card-header">
-                        <h2>Nutrition Timeline</h2>
-                    </div>
-                    <div class="chart-wrapper">
-                        <canvas id="macroChart"></canvas>
-                    </div>
-                </div>
-                <!-- Settings Section -->
-                <section class="card glass settings-card">
-                    <div class="card-header">
-                        <h2>Settings</h2>
-                    </div>
-                    <button id="btn-reset" class="btn-danger">Reset All Data For This User</button>
-                </section>
         </main>
 
-        <!-- PIN Modal Overlay -->
-        <div id="pin-modal" class="modal-overlay hidden">
-            <div class="modal-card glass">
-                <h2 id="pin-title">Enter PIN</h2>
-                <p id="pin-desc">Enter your 4-digit PIN to access this profile.</p>
-                <input type="password" id="pin-input" maxlength="4" placeholder="----">
-                <div class="modal-actions">
-                    <button id="btn-pin-submit" class="btn-primary">Submit</button>
+        <!-- Settings Modal Overlay -->
+        <div id="settings-modal" class="modal-overlay hidden">
+            <div class="modal-card glass" style="max-width: 400px; text-align: left;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="margin: 0; color: var(--text-primary);">Profile & Settings</h2>
+                    <button id="btn-close-settings"
+                        style="background: none; border: none; color: var(--text-secondary); font-size: 1.5rem; cursor: pointer; outline: none;">&times;</button>
+                </div>
+
+                <h3 style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 12px; font-weight: 500;">Manage
+                    Goals</h3>
+                <div style="display: flex; gap: 10px; margin-bottom: 25px;">
+                    <select id="goal-select" class="dropdown-glass"
+                        style="flex: 1; padding: 12px; font-size: 1rem; cursor: pointer; background: rgba(0,0,0,0.3); border-radius: 8px;">
+                        <option value="lose_1_0">Lose 1.0kg/w</option>
+                        <option value="lose_0_5">Lose 0.5kg/w</option>
+                        <option value="lose_0_25">Lose 0.25kg/w</option>
+                        <option value="maintain" selected>Maintain Weight</option>
+                        <option value="gain_0_25">Gain 0.25kg/w</option>
+                        <option value="gain_0_5">Gain 0.5kg/w</option>
+                        <option value="gain_1_0">Gain 1.0kg/w</option>
+                    </select>
+                    <button id="btn-apply-goal" class="btn-primary" style="margin: 0; padding: 0 16px;">Apply</button>
+                </div>
+
+                <h3 style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 12px; font-weight: 500;">Data &
+                    Account</h3>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <button id="btn-download" class="btn-primary"
+                        style="background: rgba(255,255,255,0.05); color: var(--text-primary); border: 1px solid var(--border-color); margin: 0; padding: 12px;">Download
+                        My Data (CSV)</button>
+                    <button id="btn-admin-download" class="btn-primary"
+                        style="background: rgba(255,255,255,0.05); color: var(--text-primary); border: 1px solid var(--border-color); display: none; margin: 0; padding: 12px;">Export
+                        Master Audit Log</button>
+                    <button id="btn-logout" class="btn-primary"
+                        style="background: rgba(255,255,255,0.05); color: var(--text-primary); border: 1px solid var(--border-color); margin: 0; padding: 12px;">Log
+                        Out</button>
+                    <button id="btn-reset" class="btn-danger" style="margin-top: 15px; padding: 12px;">Danger: Erase
+                        Profile Data</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Auth Modal Overlay -->
+        <div id="pin-modal" class="modal-overlay">
+            <div class="modal-card glass" style="max-width: 350px;">
+                <h2 id="pin-title">Log In</h2>
+                <div id="auth-tabs" style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <button id="tab-login" class="toggle-btn active" style="flex: 1;">Login</button>
+                    <button id="tab-register" class="toggle-btn" style="flex: 1;">Register</button>
+                </div>
+
+                <form id="auth-form" style="display: flex; flex-direction: column; gap: 15px;">
+                    <input type="text" id="auth-username" required placeholder="Username"
+                        style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text);">
+                    <input type="email" id="auth-email" placeholder="Email Address (Required for Registration)"
+                        style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); display: none;">
+                    <input type="password" id="auth-pin" required maxlength="4" placeholder="4-Digit PIN"
+                        style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); letter-spacing: 5px; text-align: center; font-size: 1.2rem;">
+
+                    <button type="submit" id="btn-auth-submit" class="btn-primary"
+                        style="margin-top: 10px;">Unlock</button>
+
+                    <a href="#" id="auth-forgot"
+                        style="color: var(--accent); font-size: 0.9rem; text-align: center; text-decoration: none;">Forgot
+                        PIN?</a>
+                </form>
+            </div>
+        </div>
+
+        <!-- Guide Modal Overlay -->
+        <div id="guide-modal" class="modal-overlay hidden">
+            <div class="modal-card glass" style="max-width: 500px; text-align: left;">
+                <h2>How TDEElytics Works</h2>
+                <p style="margin-top: 15px; color: var(--text-muted); line-height: 1.6;">
+                    <strong>1. The Math:</strong> 1kg of fat equals roughly 7,700 calories. Standard calculators guess
+                    your burn rate based on height/weight.<br><br>
+                    <strong>2. The Algorithm:</strong> This app ignores guesses. It tracks exactly how many calories you
+                    eat, and compares it to exactly how much your "Trend Weight" changes over a 14-day rolling
+                    window.<br><br>
+                    <strong>3. The Result:</strong> By day 14, the app calculates your true, dynamic metabolic burn rate
+                    (TDEE) based on thermodynamics, and auto-adjusts your daily calorie targets perfectly so you never
+                    hit a plateau.
+                </p>
+                <div class="modal-actions" style="margin-top: 25px;">
+                    <button id="btn-close-guide" class="btn-primary">Got it!</button>
                 </div>
             </div>
         </div>
@@ -157,7 +210,7 @@
     </div>
 
     <!-- JS -->
-    <script src="app.js"></script>
+    <script src="app_v2.js"></script>
 </body>
 
 </html>

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TDEElytics - Analytics</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script
+        src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <!-- CSS -->
+    <link rel="stylesheet" href="style_v2.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header glass">
+            <div class="header-logo">
+                <a href="index.html" class="back-link"
+                    style="text-decoration: none; font-size: 1.2rem; margin-right: 15px; color: var(--text-primary);">&larr;</a>
+                <img src="logo.webp" alt="Logo" class="logo-img">
+                <h1>Analytics</h1>
+            </div>
+            <div class="header-controls">
+                <div class="user-profile-pill">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <span id="active-user-display">Not Logged In</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Stats Bar -->
+        <div class="stats-bar glass">
+            <div class="stat-pill">
+                <span class="stat-label">Est. TDEE</span>
+                <span class="stat-value" id="header-tdee">--</span>
+            </div>
+            <div class="stat-pill highlight-pill">
+                <span class="stat-label">Daily Target</span>
+                <span class="stat-value" id="header-target">--</span>
+            </div>
+            <div class="stat-pill">
+                <span class="stat-label">Trend Wt</span>
+                <span class="stat-value" id="header-trend">--</span>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <main class="content">
+            <!-- Time Range Toggles -->
+            <div class="time-toggles glass">
+                <button class="toggle-btn active" data-range="14">2W</button>
+                <button class="toggle-btn" data-range="30">1M</button>
+                <button class="toggle-btn" data-range="90">3M</button>
+                <button class="toggle-btn" data-range="all">All</button>
+            </div>
+
+            <!-- Charts Section -->
+            <section class="charts-container">
+                <div class="card glass chart-card">
+                    <div class="card-header">
+                        <h2>Weight Trend</h2>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="weightChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card glass chart-card">
+                    <div class="card-header">
+                        <h2>Nutrition Timeline</h2>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="macroChart"></canvas>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- PIN Modal Overlay (Required to fetch data) -->
+        <div id="pin-modal" class="modal-overlay hidden">
+            <div class="modal-card glass">
+                <h2 id="pin-title">Authentication Required</h2>
+                <p id="pin-desc">Please log in on the main dashboard first.</p>
+                <a href="index.html" class="btn-primary"
+                    style="text-decoration: none; display: inline-block; text-align: center;">Go to Dashboard</a>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- JS -->
+    <script src="app_v2.js"></script>
+</body>
+
+</html>
